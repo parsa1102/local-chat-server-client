@@ -15,5 +15,5 @@ and as a client instance is closed the server will be notified with a similar me
 
 
 
-QT version : Desktop QT 6.4.2 GCC 64bit
+QT version : Desktop QT 5.14.2 GCC 64bit
 
