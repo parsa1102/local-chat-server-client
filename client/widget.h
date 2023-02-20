@@ -24,7 +24,7 @@ private:
     Ui::Widget *ui;
 
 public slots:
-    void connectToHost(QString host, quint16 port);
+    bool connectToHost(QString host, quint16 port);
     void disconnect();
 
 private slots:

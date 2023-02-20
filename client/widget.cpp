@@ -4,6 +4,7 @@
 #include <QTextCharFormat>
 #include <QColor>
 #include <QDebug>
+#include <QShortcut>
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -11,11 +12,16 @@ Widget::Widget(QWidget *parent)
 {
 
     ui->setupUi(this);
+
+    ui->IPEdit->setInputMask("000.000.000.000;_");
+    ui->portEdit->setInputMask("999999");
     setWindowTitle("PChat Client");
     connect(&m_socket,&QTcpSocket::connected,this,&Widget::connected);
     connect(&m_socket,&QTcpSocket::disconnected,this,&Widget::disconnected);
     connect(&m_socket,&QTcpSocket::stateChanged,this,&Widget::stateChanged);
     connect(&m_socket,&QTcpSocket::readyRead,this,&Widget::readyRead);
+    new QShortcut(QKeySequence(Qt::Key_Return), this, SLOT(on_sendButton_clicked()));
+    new QShortcut(QKeySequence(Qt::Key_Enter), this, SLOT(on_sendButton_clicked()));
 }
 
 Widget::~Widget()
@@ -24,15 +30,17 @@ Widget::~Widget()
 }
 
 
-void Widget::connectToHost(QString host, quint16 port)
+bool Widget::connectToHost(QString host, quint16 port)
 {
     if(m_socket.isOpen()) disconnect();
 
     m_socket.connectToHost(host,port);
     if(m_socket.waitForConnected(5000)){
         ui->statusLabel->setText("connected");
+        return true;
     }else{
         ui->statusLabel->setText("connection timed out");
+        return false;
     }
 }
 void Widget::disconnect()
@@ -92,13 +100,30 @@ void Widget::on_sendButton_clicked()
 
 void Widget::on_connectButton_clicked()
 {
+    if(ui->connectButton->text() == "disconnect"){
+        disconnect();
+        ui->connectButton->setText("connect");
+        ui->IPEdit->setText("");
+        ui->IPEdit->setEnabled(true);
+        ui->portEdit->setText("");
+        ui->portEdit->setEnabled(true);
+        return;
+    }
+
     QString portToConnect = ui->portEdit->text();
     QString ipToConnect = ui->IPEdit->text();
     ui->portEdit->setText("");
     ui->IPEdit->setText("");
     ui->statusLabel->setText("connecting to " + ipToConnect + ":"+portToConnect);
     qint64 portToConnectInt = portToConnect.toInt();
-    this->connectToHost(ipToConnect , portToConnectInt);
+    if(this->connectToHost(ipToConnect , portToConnectInt)){
+        ui->connectButton->setText("disconnect");
+        ui->IPEdit->setText(ipToConnect);
+        ui->IPEdit->setEnabled(false);
+        ui->portEdit->setText(portToConnect);
+        ui->portEdit->setEnabled(false);
+    }
+
 }
 
 void Widget::showMessage(QString sender, QString message, QString time)
