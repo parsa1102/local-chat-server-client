@@ -18,3 +18,8 @@ you can run multiple instances of server and open each of them on a diferrent po
 
 QT version : Desktop QT 5.14.2 GCC 64bit
 
+
+update notes:
+1.connect button turns into disconnect button when connected in client
+2.added input mask in client
+3.enter key sends messages in client
