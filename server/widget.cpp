@@ -3,9 +3,9 @@
 #include <QSet>
 #include <QDateTime>
 #include <QHash>
+#include <QShortcut>
 
-qint64 currentUsername = 0; //keeps how many usernames hve been assigned
-QHash<QString , qint64> userHolder; //connects socket pointer to username
+QHash<QString , QString> userHolder; //connects socket pointer to username
 
 
 Widget::Widget(QWidget *parent)
@@ -13,9 +13,11 @@ Widget::Widget(QWidget *parent)
     , ui(new Ui::Widget)
 {
     ui->setupUi(this);
+    ui->portEdit->setInputMask("999999");
     setWindowTitle("PChat Server");
     connect(&m_server,&QTcpServer::newConnection,this,&Widget::newConnection);
-
+    new QShortcut(QKeySequence(Qt::Key_Return), this, SLOT(on_castButton_clicked()));
+    new QShortcut(QKeySequence(Qt::Key_Enter), this, SLOT(on_castButton_clicked()));
 }
 
 Widget::~Widget()
@@ -25,11 +27,15 @@ Widget::~Widget()
 
 void Widget::start(qint64 port)
 {
+    if(m_server.isListening()){
+        m_server.close();
+    }
+
     m_server.listen(QHostAddress::Any,port);
 
     //server up on port message
     QString connectedServer = "server";
-    QString bindMessage = "successfully binded on port " + QString::number(port);
+    QString bindMessage = "started listening on port " + QString::number(port);
     QString bindTime = QTime::currentTime().toString();
     showMessage(connectedServer , bindMessage , bindTime);
 }
@@ -41,24 +47,18 @@ void Widget::quit()
 
 void Widget::newConnection()
 {
-    currentUsername++;
+
 
     QTcpSocket* connectedSocket = m_server.nextPendingConnection();
-    QTcpSocket *ptr = connectedSocket;
-    connectedSockets.insert(connectedSocket);
-    QString ptrStr = QString( "0x%1" ).arg( reinterpret_cast<quintptr>(ptr),
-                        QT_POINTER_SIZE * 2, 16, QChar('0') );
-
-    userHolder[ptrStr] = currentUsername;
 
     connect(connectedSocket,&QTcpSocket::disconnected,this,&Widget::disconnected);
     connect(connectedSocket,&QTcpSocket::readyRead,this,&Widget::readyRead);
 
     //connection notification :
-    QString connectedUserId = "client " + QString::number(userHolder[ptrStr]);
-    QString connectionMessage = "connected";
-    QString connectionTime = QTime::currentTime().toString();
-    showMessage(connectedUserId , connectionMessage , connectionTime);
+    //QString connectedUserId = "client with yet to be defined" + ptrStr);
+    //QString connectionMessage = "connected";
+    //QString connectionTime = QTime::currentTime().toString();
+    //showMessage(connectedUserId , connectionMessage , connectionTime);
 }
 
 void Widget::disconnected()
@@ -70,7 +70,7 @@ void Widget::disconnected()
                         QT_POINTER_SIZE * 2, 16, QChar('0') );
     connectedSockets.remove(DcSocket);
 
-    QString DcUserId = "client " + QString::number(userHolder[ptrStr]);
+    QString DcUserId = userHolder[ptrStr];
     QString DcMessage = "disconnected";
     QString DcTime = QTime::currentTime().toString();
 
@@ -85,15 +85,30 @@ void Widget::readyRead()
     QString ptrStr = QString( "0x%1" ).arg( reinterpret_cast<quintptr>(ptr),
                         QT_POINTER_SIZE * 2, 16, QChar('0') );
 
-    QString messageSenderId = "client " + QString::number(userHolder[ptrStr]);
-    QString messageToRead = senderSocket->readAll();
-    QString recieveTime = QTime::currentTime().toString();
-    showMessage(messageSenderId , messageToRead , recieveTime);
+    if(connectedSockets.find(senderSocket) == connectedSockets.end()){
+        qInfo()<<"hello";
+        QString userName = senderSocket->readAll();
+        QString joinTime = QTime::currentTime().toString();
+        userHolder[ptrStr] = userName;
+        showMessage(userName , "joined" , joinTime);
+        connectedSockets.insert(senderSocket);
+        return;
+    }
+    else{
+        QString messageSenderId = userHolder[ptrStr];
+        QString messageToRead = senderSocket->readAll();
+        QString recieveTime = QTime::currentTime().toString();
+        showMessage(messageSenderId , messageToRead , recieveTime);
+    }
 }
 
 
 void Widget::on_castButton_clicked()
 {
+    if(!(ui->messageCastEdit->text().toStdString().find_first_not_of(' ') != std::string::npos))
+    {
+        return;
+    }
     QByteArray dataToCast = ui->messageCastEdit->text().toLatin1();
     QString messageSender = "Server";
     QString sendTime = QTime::currentTime().toString();
@@ -123,7 +138,7 @@ void Widget::showMessage(QString sender, QString message, QString time)
                                 "<span style='color: #999999;'>"+
                                 spacer+
                                 time+
-                                "</span></font><br>\n");
+                                "</span></font><br><br>\n");
 }
 
 void Widget::on_goLiveButton_clicked()

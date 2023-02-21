@@ -1,5 +1,6 @@
 #include "widget.h"
 #include "ui_widget.h"
+#include <usernamedialog.h>
 #include <QDateTime>
 #include <QTextCharFormat>
 #include <QColor>
@@ -34,9 +35,15 @@ bool Widget::connectToHost(QString host, quint16 port)
 {
     if(m_socket.isOpen()) disconnect();
 
+    usernameDialog * userdial = new usernameDialog(this);
+    userdial->exec();
+    QByteArray username = userdial->usernameGetter().toLatin1();
+    qInfo()<<username;
     m_socket.connectToHost(host,port);
     if(m_socket.waitForConnected(5000)){
+        m_socket.write(username);
         ui->statusLabel->setText("connected");
+        QString userName = userdial->usernameGetter();
         return true;
     }else{
         ui->statusLabel->setText("connection timed out");
@@ -81,6 +88,11 @@ void Widget::on_sendButton_clicked()
     if(!m_socket.isOpen()){
         ui->statusLabel->setText("status : offline, failed to send message");
         ui->messageEdit->setText("");
+        return;
+    }
+    if(!(ui->messageEdit->text().toStdString().find_first_not_of(' ') != std::string::npos))
+    {
+        qInfo()<<"empty string";
         return;
     }
     QByteArray dataToSend = ui->messageEdit->text().toLatin1();

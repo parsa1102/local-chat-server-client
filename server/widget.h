@@ -1,12 +1,14 @@
 #ifndef WIDGET_H
 #define WIDGET_H
 
+
 #include <QWidget>
 #include <QDebug>
 #include <QAbstractSocket>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QSet>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }

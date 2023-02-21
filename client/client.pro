@@ -10,12 +10,15 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
+    usernamedialog.cpp \
     widget.cpp
 
 HEADERS += \
+    usernamedialog.h \
     widget.h
 
 FORMS += \
+    usernamedialog.ui \
     widget.ui
 
 # Default rules for deployment.
