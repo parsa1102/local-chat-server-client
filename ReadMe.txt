@@ -33,4 +33,5 @@ update notes 3.0:
   bug fixes:
    1.port changes on server are now working as desired
    2.empty messages won't be sent anymore on both client and server
+   3.port changes will now cause clients to disconnect rather thatn staying connected and still being able to send messages to the server which are also recieved and shown(potential Qt bug)
    
